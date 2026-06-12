@@ -742,7 +742,7 @@ int search_from_candidates(
             if (v1 < 0)
                 break;
 
-            prefetch_L2(vt.visited.data() + v1);
+            vt.prefetch(v1);
             jmax += 1;
         }
 
