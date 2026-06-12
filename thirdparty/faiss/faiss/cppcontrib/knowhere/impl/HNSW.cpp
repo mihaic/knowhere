@@ -883,7 +883,7 @@ std::priority_queue<HNSW::Node> search_from_candidate_unbounded(
             if (v1 < 0)
                 break;
 
-            prefetch_L2(vt->visited.data() + v1);
+            vt->prefetch(v1);
             jmax += 1;
         }
 
