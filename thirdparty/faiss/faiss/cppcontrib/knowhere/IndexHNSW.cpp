@@ -29,6 +29,7 @@
 #include <faiss/cppcontrib/knowhere/IndexIVFPQ.h>
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/FaissAssert.h>
+#include <faiss/impl/VisitedTable.h>
 #include <faiss/cppcontrib/knowhere/impl/ResultHandler.h>
 #include <faiss/utils/distances.h>
 #include <faiss/utils/random.h>
@@ -167,7 +168,7 @@ void hnsw_add_vertices(
 
 #pragma omp parallel if (i1 > i0 + 100)
             {
-                VisitedTable vt(ntotal);
+                VisitedTableVector vt(ntotal);
 
                 std::unique_ptr<DistanceComputer> dis(
                         storage_distance_computer(index_hnsw.storage));
@@ -288,7 +289,7 @@ void hnsw_search(
 
 #pragma omp parallel if (i1 - i0 > 1)
         {
-            VisitedTable vt(index->ntotal);
+            VisitedTableVector vt(index->ntotal);
             typename BlockResultHandler::SingleResultHandler res(bres);
 
             std::unique_ptr<DistanceComputer> dis(
@@ -445,7 +446,7 @@ void IndexHNSW::search_level_0(
         std::unique_ptr<DistanceComputer> qdis(
                 storage_distance_computer(storage));
         HNSWStats search_stats;
-        VisitedTable vt(ntotal);
+        VisitedTableVector vt(ntotal);
         RH::SingleResultHandler res(bres);
 
 #pragma omp for
@@ -527,7 +528,7 @@ void IndexHNSW::init_level_0_from_entry_points(
 
 #pragma omp parallel
     {
-        VisitedTable vt(ntotal);
+        VisitedTableVector vt(ntotal);
 
         std::unique_ptr<DistanceComputer> dis(
                 storage_distance_computer(storage));
