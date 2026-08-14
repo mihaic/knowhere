@@ -151,6 +151,16 @@ struct IndexSVSVamana : Index {
     std::vector<float> stored_vectors;
     bool stored_vectors_valid{true};
 
+    // Whether this index keeps stored_vectors at all. Compressed variants
+    // (LVQ/LeanVec) opt out: write_index() never persists the copy for them
+    // (fourcc ILVQ/ISVL) and read_index() clears stored_vectors_valid, so a
+    // freshly built index that kept one would only be able to reconstruct()
+    // until the first save/load round trip. Keeping it costs a full fp32
+    // duplicate of the dataset (n * d * 4 bytes) at build time, which for a
+    // large single-segment build dominates the peak memory of the process.
+    // reset() restores stored_vectors_valid to this value.
+    bool keeps_stored_vectors{true};
+
    protected:
     /* Initializes the implementation. For static indexes the data is consumed
        at build time; for dynamic indexes n/x are ignored and add() populates

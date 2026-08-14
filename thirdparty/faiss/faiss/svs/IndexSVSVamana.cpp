@@ -166,7 +166,8 @@ void IndexSVSVamana::reconstruct(idx_t key, float* recons) const {
     FAISS_THROW_IF_NOT_MSG(
             stored_vectors_valid && !stored_vectors.empty(),
             "IndexSVSVamana::reconstruct: stored_vectors unavailable "
-            "(invalidated by remove_ids or not restored after deserialization)");
+            "(not kept by compressed LVQ/LeanVec variants, invalidated by "
+            "remove_ids, or not restored after deserialization)");
     std::memcpy(recons, stored_vectors.data() + key * d, sizeof(float) * d);
 }
 
@@ -186,7 +187,7 @@ void IndexSVSVamana::reset() {
         }
     }
     stored_vectors.clear();
-    stored_vectors_valid = true;
+    stored_vectors_valid = keeps_stored_vectors;
     is_trained = false;
     ntotal = 0;
 }

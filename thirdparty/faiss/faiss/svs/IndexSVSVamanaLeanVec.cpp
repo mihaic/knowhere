@@ -37,6 +37,11 @@ namespace faiss {
 IndexSVSVamanaLeanVec::IndexSVSVamanaLeanVec() : IndexSVSVamana() {
     is_trained = false;
     storage_kind = SVSStorageKind::SVS_LeanVec4x4;
+    // LeanVec indexes are written as ISVL, which does not persist
+    // stored_vectors, so do not build one. See
+    // IndexSVSVamana::keeps_stored_vectors.
+    keeps_stored_vectors = false;
+    stored_vectors_valid = false;
 }
 
 IndexSVSVamanaLeanVec::IndexSVSVamanaLeanVec(
@@ -49,6 +54,8 @@ IndexSVSVamanaLeanVec::IndexSVSVamanaLeanVec(
         : IndexSVSVamana(d, degree, metric, storage_kind, is_static) {
     is_trained = false;
     leanvec_d = leanvec_dims == 0 ? d / 2 : leanvec_dims;
+    keeps_stored_vectors = false;
+    stored_vectors_valid = false;
 }
 
 IndexSVSVamanaLeanVec::~IndexSVSVamanaLeanVec() {

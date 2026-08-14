@@ -27,6 +27,10 @@ namespace faiss {
 
 IndexSVSVamanaLVQ::IndexSVSVamanaLVQ() : IndexSVSVamana() {
     storage_kind = SVSStorageKind::SVS_LVQ4x0;
+    // LVQ indexes are written as ILVQ, which does not persist stored_vectors,
+    // so do not build one. See IndexSVSVamana::keeps_stored_vectors.
+    keeps_stored_vectors = false;
+    stored_vectors_valid = false;
 }
 
 IndexSVSVamanaLVQ::IndexSVSVamanaLVQ(
@@ -35,6 +39,9 @@ IndexSVSVamanaLVQ::IndexSVSVamanaLVQ(
         MetricType metric,
         SVSStorageKind storage,
         bool is_static)
-        : IndexSVSVamana(d, degree, metric, storage, is_static) {}
+        : IndexSVSVamana(d, degree, metric, storage, is_static) {
+    keeps_stored_vectors = false;
+    stored_vectors_valid = false;
+}
 
 } // namespace faiss

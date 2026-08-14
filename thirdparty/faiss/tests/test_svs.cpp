@@ -248,6 +248,51 @@ TEST_F(SVSLL, LeanVecThrowsWithoutTraining) {
     ASSERT_THROW(index.add(100, test_data.data()), faiss::FaissException);
 }
 
+// The uncompressed index keeps the fp32 copy that backs reconstruct(); it is
+// written as ISV2 and restored on load.
+TEST_F(SVS, VamanaKeepsStoredVectors) {
+    faiss::IndexSVSVamana index{d, 64ul};
+    index.add(n, test_data.data());
+    EXPECT_EQ(index.stored_vectors.size(), n * d);
+    std::vector<float> recons(d);
+    ASSERT_NO_THROW(index.reconstruct(0, recons.data()));
+    EXPECT_EQ(recons, std::vector<float>(
+                              test_data.begin(), test_data.begin() + d));
+}
+
+// The compressed variants must not keep it: write_index() drops the copy for
+// them (fourcc ILVQ/ISVL) and read_index() clears stored_vectors_valid, so
+// keeping one would only duplicate the whole dataset in fp32 during the build.
+TEST_F(SVSLL, LVQKeepsNoStoredVectors) {
+    faiss::IndexSVSVamanaLVQ index{d, 64ul};
+    index.storage_kind = faiss::SVSStorageKind::SVS_LVQ4x8;
+    index.add(n, test_data.data());
+    EXPECT_EQ(index.ntotal, static_cast<faiss::idx_t>(n));
+    EXPECT_TRUE(index.stored_vectors.empty());
+    std::vector<float> recons(d);
+    EXPECT_THROW(index.reconstruct(0, recons.data()), faiss::FaissException);
+
+    // The opt-out survives reset(), which restores the per-index default.
+    index.reset();
+    index.add(n, test_data.data());
+    EXPECT_TRUE(index.stored_vectors.empty());
+}
+
+TEST_F(SVSLL, LeanVecKeepsNoStoredVectors) {
+    faiss::IndexSVSVamanaLeanVec index{
+            d,
+            64ul,
+            faiss::METRIC_L2,
+            0,
+            faiss::SVSStorageKind::SVS_LeanVec4x8};
+    index.train(n, test_data.data());
+    index.add(n, test_data.data());
+    EXPECT_EQ(index.ntotal, static_cast<faiss::idx_t>(n));
+    EXPECT_TRUE(index.stored_vectors.empty());
+    std::vector<float> recons(d);
+    EXPECT_THROW(index.reconstruct(0, recons.data()), faiss::FaissException);
+}
+
 TEST_F(SVS, VamanaTrainSaveLoadAndAdd) {
     faiss::IndexSVSVamana index{d, 64ul};
     train_save_load_and_add_index(index, test_data, n);
