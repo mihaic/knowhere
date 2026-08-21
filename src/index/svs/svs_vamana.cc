@@ -402,7 +402,19 @@ class SvsVamanaIndexNode : public IndexNode {
     virtual std::unique_ptr<faiss::IndexSVSVamana>
     CreateFaissIndex(int64_t dim, int64_t degree, faiss::MetricType metric, faiss::SVSStorageKind storage,
                      const SvsVamanaConfig& cfg) {
-        return std::make_unique<faiss::IndexSVSVamana>(dim, degree, metric, storage, cfg.svs_is_static.value());
+        auto index = std::make_unique<faiss::IndexSVSVamana>(dim, degree, metric, storage, cfg.svs_is_static.value());
+        // The base (uncompressed fp32/fp16/sqi8) storage kinds still default
+        // keeps_stored_vectors{true} (see IndexSVSVamana.h), so add() keeps a full fp32
+        // backing copy of every vector purely to support reconstruct(). Knowhere's SVS
+        // integration can never reach reconstruct(): GetVectorByIds() returns
+        // not_implemented and HasRawData()/StaticHasRawData() return false, so this copy
+        // is unreachable dead weight that roughly doubles resident memory for these
+        // storage kinds. LVQ/LeanVec already opt out (see their constructors) after the
+        // prior "Do not store float32 vectors in LVQ and LeanVec" change; extend the same
+        // opt-out to the base kinds here.
+        index->keeps_stored_vectors = false;
+        index->stored_vectors_valid = false;
+        return index;
     }
 
     std::unique_ptr<faiss::IndexSVSVamana> index_;
